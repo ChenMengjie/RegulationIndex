@@ -21,7 +21,6 @@ Zheng et al data was downloaded from the 10X website. Only cells that labeled as
 ```r       
 library(RegulationIndex)
 load(CD34)
-counts <- counts[, -which(duplicated(colnames(counts)))]
 testdata <- t(counts)
 ```
 
