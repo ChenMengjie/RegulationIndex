@@ -69,21 +69,21 @@ The function `waveplot` will visualize the k-proportion inflation test summary f
 
 The following commands draw wave plots for three different subpopulations for CD34+ cells. 
 ```r       
-wave_one <- waveplot(cluster.zscore.summary[[1]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE, dot_color = "#CC8D1A")
+wave_one <- waveplot(cluster.zscore.summary[[1]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
 ```
 
 ```r       
-wave_two <- waveplot(cluster.zscore.summary[[2]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE, dot_color = "#8CBEB")
+wave_two <- waveplot(cluster.zscore.summary[[2]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
 ```
 
 ```r       
-wave_three <- waveplot(cluster.zscore.summary[[3]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE, dot_color = "#F06060")
+wave_three <- waveplot(cluster.zscore.summary[[3]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
 ```
 
 The following commands draw a wave plot for  CD34+ cells as a whole population. 
 
 ```r       
-wave_all <- waveplot(cluster.zscore.summary.as.one, show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE, dot_color = "#F06060")
+wave_all <- waveplot(cluster.zscore.summary.as.one, show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
 ```
 
 
