@@ -16,15 +16,20 @@ devtools::install_github("ChenMengjie/RegulationIndex")
 ```
 
 Read in an example data set. 
-Zheng et al data was downloaded from the 10X website. Only cells that labeled as CD34+ were selected for analysis. There are 277 cells with 31482 genes. We performed UMAP on log-transformed data. We used k-means to separate cells into 3 subtypes using their UMAP coordinates. The subtype information is saved. 
+Zheng et al data was downloaded from the 10X website. Only cells that labeled as CD34+ were selected for analysis. 
 
 ```r       
 library(RegulationIndex)
-load("/Users/mchen12/Library/CloudStorage/GoogleDrive-chenmengjie87@gmail.com/My\ Drive/Ongoing/RegulatingIndex/Data_sets_in_man/Zheng/CD34.rds")
+load(CD34)
 counts <- counts[, -which(duplicated(colnames(counts)))]
-dat <- SingleCellExperiment::counts(sce)
+testdata <- t(counts)
 ```
 
+There are 277 cells with 31482 genes. We performed UMAP on log-transformed data. We used k-means to separate cells into 3 subtypes using their UMAP coordinates. The subtype information is saved in `final_cluster'. 
+```r
+dim(testdata)
+table(final_cluster)
+```
 ## **RegulationIndex** function 1: performing k-proportion inflation tests 
 
 The main function is `Kprop_inflation_test`, with following arguments:
