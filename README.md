@@ -21,7 +21,8 @@ Zheng et al data was downloaded from the 10X website. Only cells that labeled as
 ```r       
 library(RegulationIndex)
 load(CD34)
-testdata <- t(counts)
+testdata <- t(CD34$counts)
+final_cluster <- CD34$final_cluster
 ```
 
 There are 277 cells with 31482 genes. We performed UMAP on log-transformed data. We used k-means to separate cells into 3 subtypes using their UMAP coordinates. The subtype information is saved in `final_cluster'. 

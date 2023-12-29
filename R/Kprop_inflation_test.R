@@ -146,7 +146,7 @@ Estimate_dispersion_zscore_asymp_for_one_cluster <- function(X, k_cutoff = 1, fd
 
 Kprop_inflation_test <- function(dat, grouping = NULL,
                                         min.cell.num.group = 25, min.depth.group = 4000, cell.depth.ranges = c(2500, 60000),
-                                        kprop.cutoff = 1, fdr.control.method = "BH", qvalue.cutoff = 0.05, genemean.cutoff = 0.5, kprop.diff.cutoff = 0.05, filter.gene = FALSE){
+                                        kprop.cutoff = 1, fdr.control.method = "BH", qvalue.cutoff = 0.05, genemean.cutoff = 0.5, kprop.diff.cutoff = 0.05, filter.gene = TRUE){
   if(!is.null(grouping)){
     if(ncol(dat) != length(grouping)) stop("Cell numbers and grouping labels do not match.")
     else {
