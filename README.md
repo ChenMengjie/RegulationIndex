@@ -88,9 +88,9 @@ The following commands draw a wave plot for  CD34+ cells as a whole population.
 wave_all <- waveplot(cluster.zscore.summary.as.one, show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
 ```
 
-## More Tutorials
+# More tutorials
 
-[Tutorial 1](https://htmlpreview.github.io/?https://github.com/ChenMengjie/RegulationIndex/blob/main/Tutorials/One_sample_analysis.html)
+[Tutorial 1: Quantifying regulation index for a sample with multiple cell types ](https://htmlpreview.github.io/?https://github.com/ChenMengjie/RegulationIndex/blob/main/Tutorials/One_sample_analysis.html)
 
 
 ### Author
