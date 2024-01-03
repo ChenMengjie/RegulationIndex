@@ -21,7 +21,9 @@ Zheng et al data was downloaded from the 10X website. Only cells that labeled as
 ```r       
 library(RegulationIndex)
 load(CD34)
-testdata <- t(CD34$counts)
+counts <- CD34$counts
+counts <- counts[, !duplicated(colnames(counts))] 
+testdata <- t(counts)
 final_cluster <- CD34$final_cluster
 ```
 
@@ -85,6 +87,11 @@ The following commands draw a wave plot for  CD34+ cells as a whole population.
 ```r       
 wave_all <- waveplot(cluster.zscore.summary.as.one, show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
 ```
+
+## More Tutorials
+
+[Tutorial 1](https://www.rstudio.com)
+[Tutorial 2](https://www.rstudio.com)
 
 
 ### Author

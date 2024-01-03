@@ -1,0 +1,234 @@
+---
+title: "RegulationIndex Tutorial 1: Calculating regulation index for one sample with multiple cell types"
+output: html_document
+---
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 16px;
+  }
+td {  /* Table  */
+  font-size: 16px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 16px;
+  color: Brown;
+}
+
+h4 { /* Header 4 */
+  font-size: 16px;
+  color: Purple;
+}
+
+code.r{ /* Code block */
+    font-size: 18px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+To better distinguish between the gene regulatory states, we introduce a gene-specific statistic, ‘k-proportion’. This is the percentage of cells with gene expression less than a defined integer value, k, which is determined based on the mean gene expression count. Consider a situation where certain genes exhibit high expression levels in a limited subset of cells. This extreme expression skews the overall average upward, however the k-proportions (a measure reflecting the portion of cells with considerably lower expression) remain high. Essentially, under equivalent mean expressions, regulatory genes display significantly higher values of k-proportions compared to their homeostatic counterparts.
+
+# Installation
+To install the `RegulationIndex` package, you can use the code.
+
+```{r install_packages, eval=FALSE}
+devtools::install_github("ChenMengjie/RegulationIndex")
+
+```
+
+Then load the following libraries used in this tutorial:
+
+```{r}
+library(RegulationIndex)
+library(ComplexHeatmap)
+library(viridis)
+library(Seurat)
+library(umap)
+```
+
+# Dataset 1: CD34+ cells from one donor
+
+
+Zheng et al data was downloaded from the 10X website. Only cells that labeled as CD34+ were selected for analysis. There are 277 cells with 31482 genes. We performed UMAP on log-transformed data. Through UMAP visualization, we identified three distinct subgroups within the CD34+ cell population. We used k-means to separate cells into 3 subtypes using their UMAP coordinates. The UMI counts and subtype information have been stored in the `RegulationIndex` package as dataset `CD34`. 
+
+```{r}
+data(CD34, package="RegulationIndex")
+counts <- CD34$counts
+final_cluster <- CD34$final_cluster
+```
+
+```{r fig.width = 10}
+dimred = umap::umap(counts)$layout
+final_colors <- final_cluster
+final_colors[final_cluster == 2] <- "#CC8D1A"
+final_colors[final_cluster == 3] <- "#8CBEB2"
+final_colors[final_cluster == 4] <- "#F06060"
+
+par(mfrow = c(1, 2))
+plot(dimred[, 1], dimred[, 2], pch=20, col = final_colors, xlab = "UMAP1", ylab = "UMAP2")
+
+library_size <- apply(counts, 1, sum)
+gene_coverage <- apply(counts, 1, function(x){sum(x != 0)})
+plot(gene_coverage, library_size, col = final_colors, pch = 20, ylim = c(0, 6000))
+
+```
+
+## The K-proporation inflation test
+The main function is `Kprop_inflation_test()`, which will take in UMI counts and output a list of up-regulated genes that display significantly higher values of k-proportions compared to the majority of genes (homeostatic). `Kprop_inflation_test` also expects the The grouping IDs of cells through the option `grouping`. If the grouping is NULL, all cells will be assessed at once. The grouping can be cell types, individuals or any phenotype. If the grouping is supplied, cells will be evaluated by groups. If you have data with complex nested structures, like multiple cell types from multiple donors, you need to run Kprop_inflation_test multiple times. Now only one layer of grouping structure is supported. 
+
+There are several options that might need to be adjusted according to the sequencing depth of different experiments. For example, the option `cell.depth.ranges` inputs a two-value vector of the ranges of total counts per cell. The cells out of the ranges will be removed. The default is c(2500, 60000), set empirically for 10X data. The recommended per cell sequencing depth for 10x Genomics projects is between 30,000 and 70,000 reads. If your sequencing depth is substantially higher or lower than common practice, please adjust `min.depth.group` and `cell.depth.ranges` accordingly. This CD34 dataset depth is on the lower end. We set values different from the default to reflect that. The option `filter.gene` controls whether to reporting IncRNA, mtRNA, or ribosomal RNA in the list of inflated genes. The default is FALSE, i.e., reporting all RNAs.
+
+The function `Kprop_inflation_test()` will return a list of summary of k-proportion test for each cell group, including:
+* groupID : the ID of the group. The value is NA if there is no grouping information supplied.
+* NBdispersion : estimated dispersion parameter
+* Zscores : a matrix summarizing gene mean, zscore, p-value and q-value for all genes in dat. NAs are reported for genes with mean = 0.
+* Inflated : a matrix of selected genes that pass `qvalue.cutoff` and `genemean.cutoff`.
+
+
+We applied the k-proportion inflation test on UMI counts for each subtype and with all subtypes combined. 
+
+```{r}
+counts <- counts[, !duplicated(colnames(counts))] ## remove duplicated gene names
+testdata <- t(counts)
+cluster.zscore.summary <- Kprop_inflation_test(testdata, grouping = final_cluster, min.depth.group = 500, cell.depth.ranges = c(500, 10000), genemean.cutoff = 0.5, filter.gene = FALSE)
+str(cluster.zscore.summary)
+```
+
+If the grouping is not provided, the inflation will be evaluated treating all cells as a single group.
+```{r}
+cluster.zscore.summary2 <- Kprop_inflation_test(testdata, grouping = NULL, min.depth.group = 500, cell.depth.ranges = c(500, 10000), genemean.cutoff = 0.5, filter.gene = FALSE)
+```
+
+
+## Wave plots
+
+We generated wave plots for each subgroup separately and for all subgroups combined. Consequently, we observed that the empirical distribution of k-proportions in homeostatic genes (most genes) closely aligns with those from negative binomial distributions with the same dispersion level. In relatively homogeneous cell populations, the resulting distribution approximates those from a Poisson distribution. In subgroup 3, the dispersion level is 0.163, indicating similarity to a Poisson. However, as cellular heterogeneity increases, so does the dispersion level. In subgroup 2, the dispersion level is 0.526, indicating increased variability in gene expression. When considering all subgroups together, the dispersion level is 1.4.
+
+
+```{r}
+cluster.zscore.summary[[1]]$NBdispersion
+cluster.zscore.summary[[2]]$NBdispersion
+cluster.zscore.summary[[3]]$NBdispersion
+cluster.zscore.summary2$NBdispersion
+```
+
+
+In all these scenarios, we consistently observe 'droplets,' which signify genes undergoing active regulation. 
+
+```{r fig.width = 10}
+wave_one <- waveplot(cluster.zscore.summary[[1]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
+wave_one
+```
+
+```{r fig.width = 10}
+wave_two <- waveplot(cluster.zscore.summary[[2]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
+wave_two
+```
+
+```{r fig.width = 10}
+wave_three <- waveplot(cluster.zscore.summary[[3]], show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
+wave_three
+```
+
+```{r fig.width = 10}
+wave_all <- waveplot(cluster.zscore.summary2, show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
+wave_all
+```
+
+If you only want to show messenger RNAs, you can set filter.gene = TRUE. 
+
+```{r fig.width = 10}
+cluster.zscore.summary <- Kprop_inflation_test(testdata, grouping = final_cluster, min.depth.group = 500, cell.depth.ranges = c(500, 10000), genemean.cutoff = 0.5, filter.gene = TRUE)
+wave_one <- waveplot(cluster.zscore.summary[[1]], separate.RNA = FALSE, show_mean_cutoff = 0.5, xmax = 10, add_poisson_line = TRUE)
+wave_one
+```
+
+## Heatmap of inflated genes 
+
+Next we can make heatmap to visualize the UMI counts of inflated genes. 
+
+```{r fig.height = 20, fig.width = 10} 
+genes <- rownames(cluster.zscore.summary2$Inflated)
+genes <- c(genes, rownames(cluster.zscore.summary[[3]]$Inflated), rownames(cluster.zscore.summary[[2]]$Inflated), rownames(cluster.zscore.summary[[1]]$Inflated))
+
+groups <- c(rep("5", nrow(cluster.zscore.summary2$Inflated)),
+            rep("4", nrow(cluster.zscore.summary[[3]]$Inflated)),
+            rep("3", nrow(cluster.zscore.summary[[2]]$Inflated)),
+            rep("2", nrow(cluster.zscore.summary[[1]]$Inflated)))
+
+subcounts <- t(counts[, genes])
+subcounts[subcounts>20] <- 20
+
+Colors <- viridis(40)
+cell_type <- final_cluster
+
+ha = HeatmapAnnotation(
+  cell_type = cell_type,
+  border = TRUE)
+
+Heatmap(subcounts, name = "CD34+ inflated genes", cluster_row_slices = FALSE, cluster_column_slices = FALSE,
+        column_split = factor(cell_type), row_split = factor(groups),
+        top_annotation = ha,
+        column_title_gp = gpar(fill = c( "#CC8D1A", "#8CBEB2", "#F06060")),
+        col=Colors, row_title_gp = gpar(fill = c( "#CC8D1A", "#8CBEB2", "#F06060", "#5C4B51")))
+
+```
+
+
+We can visualize log-normalized data too. 
+
+```{r fig.height = 20, fig.width = 10}
+
+subcounts <- t(counts[, genes])
+test.normal <- NormalizeData(subcounts)
+
+Heatmap(as.matrix(test.normal), name = "CD34+ inflated genes", cluster_row_slices = FALSE, cluster_column_slices = FALSE,
+        column_split = factor(cell_type), row_split = factor(groups),
+        top_annotation = ha,
+        column_title_gp = gpar(fill = c( "#CC8D1A", "#8CBEB2", "#F06060")),
+        col=Colors, row_title_gp = gpar(fill = c( "#CC8D1A", "#8CBEB2", "#F06060", "#5C4B51")))
+
+```
+
+
+
+## Session information 
+
+Here is the session information. 
+```{r}
+devtools::session_info()
+```
+
+
+
+
+
+
+
+
+
+
+
+
