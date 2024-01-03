@@ -90,8 +90,7 @@ wave_all <- waveplot(cluster.zscore.summary.as.one, show_mean_cutoff = 0.5, xmax
 
 ## More Tutorials
 
-[Tutorial 1](https://www.rstudio.com)
-[Tutorial 2](https://www.rstudio.com)
+[Tutorial 1](https://htmlpreview.github.io/?https://github.com/ChenMengjie/RegulationIndex/blob/main/Tutorials/One_sample_analysis.html)
 
 
 ### Author
