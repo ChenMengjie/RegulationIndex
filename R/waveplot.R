@@ -41,7 +41,7 @@ solve_for_pi_NB <- function(gene_mean, dispersion, n = 50, one_sided = TRUE){ #a
 #' waveplot
 #'
 #' @param one.cluster.zscore.summary output from Kprop_inflation_test()
-#' @param separate.RNA Default is TURE. Whether to plot IncRNA, mtRNA, or ribosomal RNA. When set to TRUE, only coding RNA will be plotted.
+#' @param separate.RNA Default is TURE. Whether to plot IncRNA, mtRNA, or ribosomal RNA. When set to FALSE, all RNAs will be plotted.
 #' @param one_sided Default is TRUE. Whether to draw the confident interval based on a one-sided test.
 #' @param show_mean_cutoff Default is 1.5. Cut-off on the gene mean for inflated genes.
 #' @param show_CI Default is FALSE. Whether to draw the confidence intervals.

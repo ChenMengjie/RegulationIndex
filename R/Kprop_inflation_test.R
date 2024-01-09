@@ -174,7 +174,9 @@ Kprop_inflation_test <- function(dat, grouping = NULL,
         if(filter.gene == TRUE & !is.null(rownames(hits))){
           data("otherRNA")
           filtered.id <- c(which(rownames(hits)%in%otherRNA[, "Gene"]), grep("^LINC", rownames(hits)), grep("^A[A-Z][0-9][0-9][0-9][0-9][0-9][0-9]", rownames(hits)))
-          hits <- hits[-filtered.id, ]
+          if(length(filtered.id) > 0) {
+            hits <- hits[-filtered.id, ]
+          }
         }
         hits <- hits[order(hits$zscore, decreasing = TRUE), ]
         group_zscore_summary[[j]] <- list(groupID = groupIDs[j], NBdispersion = res_onegroup$dispersion_est, Zscores = scores, Inflated = hits)
@@ -193,7 +195,9 @@ Kprop_inflation_test <- function(dat, grouping = NULL,
     if(filter.gene == TRUE & !is.null(rownames(hits))){
       data(otherRNA)
       filtered.id <- c(which(rownames(hits)%in%otherRNA[, "Gene"]), grep("^LINC", rownames(hits)), grep("^A[A-Z][0-9][0-9][0-9][0-9][0-9][0-9]", rownames(hits)))
-      hits <- hits[-filtered.id, ]
+      if(length(filtered.id) > 0) {
+        hits <- hits[-filtered.id, ]
+      }
     }
     hits <- hits[order(hits$zscore, decreasing = TRUE), ]
     group_zscore_summary <- list(groupID = NA, NBdispersion = res_onegroup$dispersion_est, Zscores = scores, Inflated = hits)
