@@ -90,8 +90,8 @@ wave_all <- waveplot(cluster.zscore.summary.as.one, show_mean_cutoff = 0.5, xmax
 
 # More tutorials
 
-[Tutorial 1: Quantifying regulation index for a sample with multiple cell types ](https://htmlpreview.github.io/?https://github.com/ChenMengjie/RegulationIndex/blob/main/Tutorials/One_sample_analysis.html)
-[Tutorial 2: Quantifying regulation index for multiple samples of one cell type ](https://htmlpreview.github.io/?https://github.com/ChenMengjie/RegulationIndex/blob/main/Tutorials/Multiple_samples_analysis.html)
+[Tutorial 1: Quantifying regulation index for a sample with multiple cell types](https://htmlpreview.github.io/?https://github.com/ChenMengjie/RegulationIndex/blob/main/Tutorials/One_sample_analysis.html)
+[Tutorial 2: Quantifying regulation index for multiple samples of one cell type](https://htmlpreview.github.io/?https://github.com/ChenMengjie/RegulationIndex/blob/main/Tutorials/Multiple_samples_analysis.html)
 
 ### Author
 
