@@ -1,0 +1,238 @@
+---
+title: "RegulationIndex Tutorial 2: Calculating regulation index for multiple samples of one cell type"
+output: html_document
+---
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 16px;
+  }
+td {  /* Table  */
+  font-size: 16px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 16px;
+  color: Brown;
+}
+
+h4 { /* Header 4 */
+  font-size: 16px;
+  color: Purple;
+}
+
+code.r{ /* Code block */
+    font-size: 18px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+To better distinguish between the gene regulatory states, we introduce a gene-specific statistic, ‘k-proportion’. This is the percentage of cells with gene expression less than a defined integer value, k, which is determined based on the mean gene expression count. Consider a situation where certain genes exhibit high expression levels in a limited subset of cells. This extreme expression skews the overall average upward, however the k-proportions (a measure reflecting the portion of cells with considerably lower expression) remain high. Essentially, under equivalent mean expressions, regulatory genes display significantly higher values of k-proportions compared to their homeostatic counterparts.
+
+To install the `RegulationIndex` and other packages used in the tutorial, you can use the following code.
+
+```{r install_packages, eval=FALSE}
+install.packages(c("umap", "viridis", "Seurat"))
+BiocManager::install(c("org.Hs.eg.db", "ComplexHeatmap", "clusterProfiler", "ExperimentHub", "scater", "muscat"))
+
+library(devtools)
+devtools::install_github("ChenMengjie/RegulationIndex")
+```
+
+Then load the following libraries used in this tutorial:
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Load the libraries used in this tutorial
+library(RegulationIndex)
+library(ComplexHeatmap)
+library(viridis)
+library(Seurat)
+library(umap)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(ggplot2)
+library(ExperimentHub)
+library(scater)
+library(muscat)
+```
+
+# Dataset 2: B cells under IFN-β stimulation.
+
+
+In this case study, we applied our framework to data collected by Kang et al. This dataset consists of cells from eight distinct cell types, collected from peripheral blood mononuclear cells of 8 lupus patients. We performed quality control on the original data and retained 7,661 genes for further analysis. We will demonstrate the inflation test on 2,880 B cells as an example. Within B cells, the cells are evenly split into two groups for perturbation: IFN-β stimulated and un-stimulated control.
+
+```{r}
+# Access the ExperimentHub and retrieve the Kang dataset
+eh = ExperimentHub()
+query(eh, "Kang")
+sce = eh[["EH2259"]]
+
+# remove undetected genes
+sce <- sce[rowSums(counts(sce) > 0) > 0, ]
+
+# remove lowly expressed genes
+sce <- sce[rowSums(counts(sce) > 1) >= 10, ]
+dim(sce)
+
+# Create a unique identifier for samples
+sce$id <- paste0(sce$stim, sce$ind)
+(sce <- prepSCE(sce, 
+    kid = "cell", # subpopulation assignments
+    gid = "stim",  # group IDs (ctrl/stim)
+    sid = "id",   # sample IDs (ctrl/stim.1234)
+    drop = FALSE) ) # drop all other colData columns
+
+counts <- sce@assays@data@listData[["counts"]][, sce@colData@listData$cluster_id %in% "B cells"]
+sample_id <- sce@colData@listData$sample_id[sce@colData@listData$cluster_id  %in%  "B cells"]
+
+dim(counts)
+length(sample_id)
+table(sample_id)
+```
+
+We applied the k-proportion inflation test on UMI counts for each of 16 samples (8 donors x 2 treatment conditions), respectively, by calling the main function ` Kprop_inflation_test()` and providing the sample information through option `grouping`.    
+
+```{r}
+cluster.zscore.summary <- Kprop_inflation_test(counts, grouping = sample_id, min.depth.group = 500, cell.depth.ranges = c(500, 10000), genemean.cutoff = 0.5, filter.gene = FALSE)
+```
+You can visualize the k-proportions from any sample using a waveplot. Here we make a waveplot for the fifth sample.
+```{r fig.width = 10}
+wave_one <- waveplot(cluster.zscore.summary[[5]], show_mean_cutoff = 0.5, xmax = 10)
+wave_one
+```
+
+Next, let's identify genes that are inflated in at least two samples:
+```{r}
+sample.names <- names(table(sample_id))
+all.inflated.genes <- NULL
+for(i in 1:16){
+  aa <- data.frame(id = sample.names[i], genes = rownames(cluster.zscore.summary[[i]]$Inflated))
+  all.inflated.genes <- rbind(all.inflated.genes, aa)
+}
+gene.tab <- table(all.inflated.genes[,2])
+selected.inflated.genes <- names(gene.tab)[which(gene.tab>1)]
+length(selected.inflated.genes)
+```
+
+There are 101 genes inflated in more than one sample, which is manageable for heatmap visualization. If the number is larger, consider adjusting your selection criteria according to your dataset, such as genes inflated in more than 5 or 10% of the samples. Now, let's check the z-scores and means of selected inflated genes across all samples:
+
+```{r fig.height = 20, fig.width = 20} 
+all.zscore <- NULL
+all.means <- NULL
+for(j in 1:16){
+  all.zscore <- cbind(all.zscore, cluster.zscore.summary[[j]]$Zscores[selected.inflated.genes, "zscore"])
+  all.means <- cbind(all.means, cluster.zscore.summary[[j]]$Zscores[selected.inflated.genes, "gene_mean"])
+}
+colnames(all.zscore) <- colnames(all.means) <- unique(sample_id)
+rownames(all.zscore) <- rownames(all.means) <- selected.inflated.genes
+
+all.zscore[is.na(all.zscore)] <- 0
+all.zscore[all.zscore < 0] <- 0
+all.zscore[all.zscore > 10] <- 10
+
+Colors <- viridis(40)
+
+condition <-  c(rep("control", 8), rep("stimulated", 8))
+ha = HeatmapAnnotation(
+  condition = condition,
+  border = TRUE)
+
+Heatmap(all.zscore, name = "Z-score", column_split = condition,
+        cluster_column_slices = FALSE, col=Colors, top_annotation = ha)
+```
+
+```{r fig.height = 20, fig.width = 20} 
+all.means[all.means > 20] <- 20
+
+Heatmap(all.means, name = "Gene mean", column_split = condition,
+        cluster_column_slices = FALSE, col=Colors, top_annotation = ha)
+
+```
+
+We can perform enrichment analysis for genes that are sharply up-regulated in a subset.
+
+```{r fig.height = 10, fig.width = 20} 
+
+# List of gene names
+geneList <- selected.inflated.genes
+
+# Perform GO enrichment analysis using default settings
+enrich_result <- enrichGO(gene = geneList, OrgDb = org.Hs.eg.db, keyType = "SYMBOL")
+
+dotplot(enrich_result, showCategory=20) + ggtitle("dotplot for GO")
+
+```
+
+We are particularly interested in inflammation regulated genes. Below we display the UMI counts across all cells for a subset of inflated genes. 
+
+```{r fig.height = 10, fig.width = 20} 
+subcounts <- counts[selected.inflated.genes, ]
+subcounts[subcounts > 10] <- 10 # Cap values for visualization
+
+# Convert the subset to a matrix
+subcounts <- as.matrix(subcounts)
+
+conditions <- rep("control", length(sample_id)) 
+conditions[grep("stim", sample_id)] <- "stimulated"
+
+
+ha = HeatmapAnnotation(
+  sample_id = sample_id,
+  conditions = conditions,
+  border = TRUE)
+
+
+# Define a subset of genes for visualization
+subsetIDs <- c("CCL3", "CCL4", "CXCL10", "IFIT2", "IFITM3", "IRF8", "NFKBIA", "REL", "RSAD2")
+subset_mat <- as.matrix(subcounts[subsetIDs, ])
+
+# Define annotations for the subset genes
+subset_gene_anno <- c("Chemokines", "Chemokines", "Chemokines", "Interferon induced protein", "IFITMs", "IRFs", "Regulators of NFKB", "NF-kB family", "Interferon induced protein")
+
+
+Heatmap(subset_mat, name = "UMI", row_split = factor(subset_gene_anno), column_split = sample_id,
+        cluster_row_slices = FALSE, col=Colors, top_annotation = ha, column_labels = rep("", ncol(subset_mat)))
+
+```
+
+
+
+## Session information 
+
+Here is the session information. 
+```{r, eval=FALSE}
+devtools::session_info()
+```
+
+
+
+
+
+
+
+
+
+
+
+
