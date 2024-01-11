@@ -62,7 +62,7 @@ devtools::install_github("ChenMengjie/RegulationIndex")
 
 Then load the following libraries used in this tutorial:
 
-```{r message=FALSE, warning=FALSE, include=FALSE}
+```{r message=FALSE, warning=FALSE}
 # Load the libraries used in this tutorial
 library(RegulationIndex)
 library(ComplexHeatmap)
