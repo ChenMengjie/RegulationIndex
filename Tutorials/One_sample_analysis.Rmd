@@ -55,7 +55,6 @@ To install the `RegulationIndex` package, you can use the code.
 
 ```{r install_packages, eval=FALSE}
 devtools::install_github("ChenMengjie/RegulationIndex")
-
 ```
 
 Then load the following libraries used in this tutorial:
@@ -74,7 +73,7 @@ library(umap)
 Zheng et al data was downloaded from the 10X website. Only cells that labeled as CD34+ were selected for analysis. There are 277 cells with 31482 genes. We performed UMAP on log-transformed data. Through UMAP visualization, we identified three distinct subgroups within the CD34+ cell population. We used k-means to separate cells into 3 subtypes using their UMAP coordinates. The UMI counts and subtype information have been stored in the `RegulationIndex` package as dataset `CD34`. 
 
 ```{r}
-data(CD34, package="RegulationIndex")
+data("CD34", package = "RegulationIndex")
 counts <- CD34$counts
 final_cluster <- CD34$final_cluster
 ```

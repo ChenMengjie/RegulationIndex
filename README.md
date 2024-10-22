@@ -20,7 +20,9 @@ Zheng et al data was downloaded from the 10X website. Only cells that labeled as
 
 ```r       
 library(RegulationIndex)
-load(CD34)
+ data("CD34", package = "RegulationIndex")
+# Or in older R versions, use the following code to load the data from the package
+# load(CD34)
 counts <- CD34$counts
 counts <- counts[, !duplicated(colnames(counts))] 
 testdata <- t(counts)
